@@ -66,7 +66,7 @@ typedef struct
 //######################------START OF FUNCTION DEFENITION--------##############################
 
 
-void DisplaySystemOption(User *user);
+void DisplaySystemOption();
 
 bool isValidPassword(const char *password);
 
@@ -104,13 +104,13 @@ void HideFile(FILE* file);
 
 char* OfferStrongPassword();
 
-//void UserOption(char *username , char *password);
+void UserOption(char *username, char *password);
 
-//void InsertNewPassword(char *username, char *password);
+void InsertNewPassword(char *username, char *password);
 
 void DeleteAccount(char *username, char *password);
 
-//void ViewPasswords(char *username,char *password);
+void ViewPasswords(char *username, const char *password);
 
 unsigned long HashPassword(const char *str);
 
@@ -118,30 +118,42 @@ char* encrypt_password(const char* password);
 
 char* decrypt_password(const char* encrypted_password);
 
-char* add_salt_encryption(char *passwordToBeSalted);
+char* add_salt_encryption(const char *passwordToBeSalted);
+
+char random_char();
 
 //#####################-----END OF FUNCTION DEFENITION------################################
 
+User newUser;
 
 int main()
 {
     User newUser; // Create a new user object
-    DisplaySystemOption(&newUser);
 
-    if(isLoggedIn)
-    {
-        UserOption(newUser.name,newUser.password);
-    }
+    // Loop to keep displaying system options until the user exits or logs in
+
+        DisplaySystemOption();
+
+        // Optional: Add an exit condition or loop continuation based on user input
+        int exitChoice;
+        printf("Do you want to exit? (1: Yes, 0: No): ");
+        scanf("%d", &exitChoice);
+        if (exitChoice == 1) {
+
+        }
 
 
+    return 0;
 }
+
 
 
 //#########-------------- START OF FUNCTION IMPLEMENTION-------------------##################################
 
 
 
-void DisplaySystemOption(User *user)
+
+void DisplaySystemOption()
 {
     printf("\t\t\t\t\t\t******************\n");
     printf("\t\t\t\t\t\t***LOGIN-SYSTEM***\n");
@@ -162,16 +174,22 @@ void DisplaySystemOption(User *user)
     switch (x)
     {
     case 1:
-        Register(); // Calls the Register function to register a new user
+        Register(); // Pass the user object to Register function to update its details
         break;
     case 2:
-        Login(); // Calls the Login function to perform user login
+        Login(); // Pass the user object to Login function to update its details
         break;
     case 3:
-        // Privacy_Policy(); // Calls the Privacy_Policy function to display the privacy policy
+        // Privacy_Policy(); // Placeholder for privacy policy functionality
         break;
     default:
         printf("\t\t\t\t\t  Invalid Choice try again later\n");
+    }
+
+    // After registration or login, check if isLoggedIn is true and then call UserOption
+    if (isLoggedIn)
+    {
+        UserOption(newUser.name, newUser.password);
     }
 }
 
@@ -546,6 +564,10 @@ void Login()
                 loginAttempts = 0;
                 fclose(file);
                 isLoggedIn = true;
+
+                strcpy(newUser.name, username);
+                strcpy(newUser.password, password);
+
                 return;
             } else {
                 printf("Incorrect password. Please try again.\n");
@@ -679,28 +701,30 @@ void DeleteAccount(char *username, char *password)
 
 char* encrypt_password(const char* password)
 {
-    char key = 'K'; // Simple XOR key for demonstration
-    size_t len = strlen(password);
-    char* encrypted = (char*)malloc(len + 1);
-    for (size_t i = 0; i < len; ++i) {
-        encrypted[i] = password[i] ^ key;
+    int shift = 3;
+    int len = strlen(password);
+    char* encrypted_password = (char*)malloc((len + 1) * sizeof(char));
+
+    for (int i = 0; i < len; ++i) {
+        encrypted_password[i] = password[i] + shift;
     }
-    encrypted[len] = '\0';
-    return encrypted;
+    encrypted_password[len] = '\0';
+
+    return encrypted_password;
 }
 
 char* decrypt_password(const char* encrypted_password)
 {
-    char key = 'K'; // Same XOR key used for encryption
-    size_t len = strlen(encrypted_password);
-    char* decrypted = (char*)malloc(len + 1); // Allocate memory for decrypted password
+    int shift = 3;
+    int len = strlen(encrypted_password);
+    char* decrypted_password = (char*)malloc((len + 1) * sizeof(char));
 
-    for (size_t i = 0; i < len; ++i) {
-        decrypted[i] = encrypted_password[i] ^ key; // XOR decryption
+    for (int i = 0; i < len; ++i) {
+        decrypted_password[i] = encrypted_password[i] - shift;
     }
-    decrypted[len] = '\0'; // Null-terminate the string
+    decrypted_password[len] = '\0';
 
-    return decrypted;
+    return decrypted_password;
 }
 
 void InsertNewPassword(char *username, char *password)
@@ -840,6 +864,34 @@ void ViewPasswords(char *username, const char *password)
     }
 
     fclose(file);
+}
+
+char random_char()
+{
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return charset[rand() % (sizeof(charset) - 1)];
+}
+
+char* add_salt_encryption(const char* passwordToBeSalted)
+{
+    srand(time(0)); // Seed the random number generator
+
+    int salt_length = rand() % 5 + 5; // Generate a random salt length between 5 and 9
+    int password_length = strlen(passwordToBeSalted);
+
+    char* salted_password = (char*)malloc((password_length + salt_length + 1) * sizeof(char));
+
+    strcpy(salted_password, passwordToBeSalted);
+
+    for (int i = 0; i < salt_length; ++i) {
+        salted_password[password_length + i] = random_char();
+    }
+    salted_password[password_length + salt_length] = '\0';
+
+    char* encrypted = encrypt_password(salted_password);
+    free(salted_password); // Free the temporary salted password string
+
+    return encrypted;
 }
 
 
